@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cold Email System UI</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --color-text-primary: #111827;
+      --color-text-secondary: #4b5563;
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f3f4f6;
+      --color-border: #d1d5db;
+      --color-accent: #2563eb;
+      --color-accent-contrast: #ffffff;
+      --color-success: #059669;
+      --color-error: #dc2626;
+      --color-done: #16a34a;
+      --spacing-xs: 0.25rem;
+      --spacing-sm: 0.5rem;
+      --spacing-md: 0.75rem;
+      --spacing-lg: 1rem;
+      --spacing-xl: 1.5rem;
+      --radius: 8px;
+      --font: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+      font-family: var(--font);
+      line-height: 1.4;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    h1 { margin: 0 0 1rem; font-size: 1.5rem; }
+    h2 { margin: 0 0 0.5rem; font-size: 1.2rem; }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--spacing-sm);
+      margin-bottom: 1rem;
+    }
+
+    .step-pill {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 0.65rem 0.75rem;
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      cursor: pointer;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+    .step-pill.active { border-color: var(--color-accent); }
+    .step-pill.done { border-color: var(--color-done); color: var(--color-done); }
+    .step-pill:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .panel {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-background-primary);
+      padding: var(--spacing-xl);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--spacing-lg);
+    }
+
+    .field { margin-bottom: var(--spacing-md); }
+    label {
+      display: block;
+      margin-bottom: var(--spacing-xs);
+      color: var(--color-text-secondary);
+      font-size: 0.9rem;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      padding: 0.65rem;
+      font: inherit;
+    }
+    textarea { min-height: 180px; resize: vertical; }
+
+    button {
+      cursor: pointer;
+      background: var(--color-accent);
+      color: var(--color-accent-contrast);
+      border-color: var(--color-accent);
+    }
+    button.secondary {
+      background: var(--color-background-primary);
+      color: var(--color-text-primary);
+      border-color: var(--color-border);
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+
+    .upload-zone {
+      border: 2px dashed var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: var(--spacing-md);
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--color-border);
+      text-align: left;
+      padding: 0.45rem;
+      vertical-align: top;
+    }
+    th { background: var(--color-background-secondary); }
+
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--spacing-sm);
+      margin-top: 1rem;
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: var(--spacing-sm);
+    }
+    .metric {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: .85rem;
+      background: var(--color-background-secondary);
+    }
+    .metric .value { font-size: 1.3rem; font-weight: 700; }
+
+    .progress {
+      margin-top: var(--spacing-md);
+      background: var(--color-background-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      height: 20px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: var(--color-accent);
+      transition: width .2s linear;
+    }
+
+    .log {
+      margin-top: var(--spacing-md);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      height: 220px;
+      overflow: auto;
+      padding: var(--spacing-sm);
+      background: var(--color-background-secondary);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: .85rem;
+    }
+    .ok { color: var(--color-success); }
+    .fail { color: var(--color-error); }
+
+    .preview-card {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      background: var(--color-background-secondary);
+      white-space: pre-wrap;
+    }
+
+    .dots { display: inline-flex; gap: 3px; margin-left: 0.4rem; vertical-align: middle; }
+    .dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-text-secondary);
+      animation: pulse 1s infinite ease-in-out;
+    }
+    .dots span:nth-child(2) { animation-delay: .12s; }
+    .dots span:nth-child(3) { animation-delay: .24s; }
+    @keyframes pulse { 0%, 80%, 100% { opacity:.25; } 40% { opacity:1; } }
+
+    .hint { color: var(--color-text-secondary); font-size: .85rem; }
+
+    @media (max-width: 900px) {
+      .steps, .grid-2, .metric-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Cold Email System</h1>
+    <nav class="steps" id="stepNav"></nav>
+
+    <section class="panel" id="step1">
+      <h2>Step 1 — Contacts</h2>
+      <p class="hint">Upload .xlsx, .xls, or .csv files. Columns are auto-detected and can be remapped.</p>
+
+      <div class="upload-zone" id="uploadZone">
+        <input id="fileInput" type="file" accept=".xlsx,.xls,.csv" />
+      </div>
+      <div class="controls" style="margin-top:0;">
+        <button type="button" class="secondary" id="demoBtn">Load demo data</button>
+      </div>
+
+      <div class="grid-2" style="margin-top:1rem;">
+        <div>
+          <h3>Column Mapping</h3>
+          <div class="field"><label for="mapName">Name</label><select id="mapName"></select></div>
+          <div class="field"><label for="mapEmail">Email</label><select id="mapEmail"></select></div>
+          <div class="field"><label for="mapCompany">Company</label><select id="mapCompany"></select></div>
+          <div class="field"><label for="mapRole">Role</label><select id="mapRole"></select></div>
+        </div>
+        <div>
+          <h3>Contact Preview (first 8 rows)</h3>
+          <div style="overflow:auto;"><table id="previewTable"></table></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="step2" hidden>
+      <h2>Step 2 — Template</h2>
+      <div class="field"><label for="fromName">From name</label><input id="fromName" placeholder="Alex from Acme" /></div>
+      <div class="field"><label for="subject">Subject (supports {{name}}, {{company}}, {{role}}, {{sender}})</label><input id="subject" /></div>
+      <div class="field"><label for="body">Body (supports same placeholders)</label><textarea id="body"></textarea></div>
+
+      <h3>AI Generation</h3>
+      <p class="hint">Describe your offering. AI returns JSON with subject/body and auto-fills.</p>
+      <div class="grid-2">
+        <div>
+          <div class="field"><label for="anthropicKey">Anthropic API key</label><input id="anthropicKey" type="password" placeholder="sk-ant-..." /></div>
+          <div class="field"><label for="offering">Offering description</label><textarea id="offering" placeholder="Who you help, pain points, differentiator, CTA..."></textarea></div>
+          <button id="generateAI" type="button">Generate with AI <span id="aiLoader" hidden class="dots"><span></span><span></span><span></span></span></button>
+          <p class="hint" id="aiStatus"></p>
+        </div>
+        <div>
+          <p class="hint">Placeholders:</p>
+          <ul>
+            <li><code>{{name}}</code></li>
+            <li><code>{{company}}</code></li>
+            <li><code>{{role}}</code></li>
+            <li><code>{{sender}}</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="step3" hidden>
+      <h2>Step 3 — Preview</h2>
+      <div class="controls" style="margin-top:0;">
+        <button class="secondary" id="prevPreview" type="button">Prev</button>
+        <div id="previewIndex" class="hint"></div>
+        <button class="secondary" id="nextPreview" type="button">Next</button>
+      </div>
+      <div class="field" style="margin-top:1rem;"><label>To:</label><div id="previewTo"></div></div>
+      <div class="field"><label>Resolved Subject:</label><div class="preview-card" id="previewSubject"></div></div>
+      <div class="field"><label>Resolved Body:</label><div class="preview-card" id="previewBody"></div></div>
+    </section>
+
+    <section class="panel" id="step4" hidden>
+      <h2>Step 4 — Send</h2>
+      <div class="metric-grid">
+        <div class="metric"><div>Total contacts</div><div class="value" id="mTotal">0</div></div>
+        <div class="metric"><div>Sent</div><div class="value" id="mSent">0</div></div>
+        <div class="metric"><div>Failed</div><div class="value" id="mFailed">0</div></div>
+      </div>
+
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+      <div class="controls">
+        <button id="sendAll" type="button">Send all via Gmail MCP</button>
+      </div>
+      <div class="log" id="sendLog"></div>
+    </section>
+
+    <div class="controls">
+      <button type="button" class="secondary" id="backBtn">Back</button>
+      <button type="button" id="nextBtn">Next</button>
+    </div>
+  </main>
+
+  <script>
+    const state = {
+      step: 1,
+      completed: new Set(),
+      rawRows: [],
+      contacts: [],
+      columns: [],
+      mapping: { name: '', email: '', company: '', role: '' },
+      template: {
+        fromName: 'Alex',
+        subject: 'Quick idea for {{company}}',
+        body: 'Hi {{name}},\n\nI noticed {{company}} is growing its {{role}} initiatives. I have a short idea to help.\n\nOpen to a quick chat?\n\n— {{sender}}'
+      },
+      previewIndex: 0,
+      sending: false
+    };
+
+    const stepDefs = [
+      { id: 1, label: 'Contacts' },
+      { id: 2, label: 'Template' },
+      { id: 3, label: 'Preview' },
+      { id: 4, label: 'Send' }
+    ];
+
+    const els = {
+      stepNav: document.getElementById('stepNav'),
+      sections: {
+        1: document.getElementById('step1'),
+        2: document.getElementById('step2'),
+        3: document.getElementById('step3'),
+        4: document.getElementById('step4')
+      },
+      backBtn: document.getElementById('backBtn'),
+      nextBtn: document.getElementById('nextBtn'),
+      fileInput: document.getElementById('fileInput'),
+      demoBtn: document.getElementById('demoBtn'),
+      mapName: document.getElementById('mapName'),
+      mapEmail: document.getElementById('mapEmail'),
+      mapCompany: document.getElementById('mapCompany'),
+      mapRole: document.getElementById('mapRole'),
+      previewTable: document.getElementById('previewTable'),
+      fromName: document.getElementById('fromName'),
+      subject: document.getElementById('subject'),
+      body: document.getElementById('body'),
+      anthropicKey: document.getElementById('anthropicKey'),
+      offering: document.getElementById('offering'),
+      generateAI: document.getElementById('generateAI'),
+      aiLoader: document.getElementById('aiLoader'),
+      aiStatus: document.getElementById('aiStatus'),
+      prevPreview: document.getElementById('prevPreview'),
+      nextPreview: document.getElementById('nextPreview'),
+      previewIndex: document.getElementById('previewIndex'),
+      previewTo: document.getElementById('previewTo'),
+      previewSubject: document.getElementById('previewSubject'),
+      previewBody: document.getElementById('previewBody'),
+      sendAll: document.getElementById('sendAll'),
+      sendLog: document.getElementById('sendLog'),
+      mTotal: document.getElementById('mTotal'),
+      mSent: document.getElementById('mSent'),
+      mFailed: document.getElementById('mFailed'),
+      progressBar: document.getElementById('progressBar')
+    };
+
+    function renderStepNav() {
+      els.stepNav.innerHTML = '';
+      stepDefs.forEach(step => {
+        const b = document.createElement('button');
+        b.className = 'step-pill';
+        if (state.step === step.id) b.classList.add('active');
+        if (state.completed.has(step.id)) b.classList.add('done');
+        const donePrefix = state.completed.has(step.id) ? '✓ ' : '';
+        b.textContent = `${donePrefix}${step.id}. ${step.label}`;
+        const canGo = step.id <= state.step || state.completed.has(step.id - 1);
+        b.disabled = !canGo;
+        b.onclick = () => { state.step = step.id; render(); };
+        els.stepNav.appendChild(b);
+      });
+    }
+
+    function render() {
+      renderStepNav();
+      Object.entries(els.sections).forEach(([num, el]) => {
+        el.hidden = Number(num) !== state.step;
+      });
+      els.backBtn.disabled = state.step === 1;
+      els.nextBtn.disabled = state.step === 4;
+      renderPreview();
+      renderMetrics();
+    }
+
+    function inferColumn(target) {
+      const patterns = {
+        name: /(name|full.?name|first.?name)/i,
+        email: /(email|e-mail|mail)/i,
+        company: /(company|organization|org|firm|business)/i,
+        role: /(role|title|position|job)/i
+      };
+      return state.columns.find(c => patterns[target].test(c)) || '';
+    }
+
+    function refreshContactsFromMapping() {
+      state.contacts = state.rawRows.map(r => ({
+        name: (r[state.mapping.name] ?? '').toString().trim(),
+        email: (r[state.mapping.email] ?? '').toString().trim(),
+        company: (r[state.mapping.company] ?? '').toString().trim(),
+        role: (r[state.mapping.role] ?? '').toString().trim()
+      })).filter(c => c.email);
+
+      renderContactPreviewTable();
+      renderMetrics();
+    }
+
+    function fillMappingDropdowns() {
+      const options = [''].concat(state.columns);
+      [
+        ['name', els.mapName],
+        ['email', els.mapEmail],
+        ['company', els.mapCompany],
+        ['role', els.mapRole]
+      ].forEach(([key, select]) => {
+        select.innerHTML = options.map(o => `<option value="${o}">${o || '— Unmapped —'}</option>`).join('');
+        if (!state.mapping[key]) state.mapping[key] = inferColumn(key);
+        select.value = state.mapping[key] || '';
+        select.onchange = () => {
+          state.mapping[key] = select.value;
+          refreshContactsFromMapping();
+        };
+      });
+    }
+
+    function renderContactPreviewTable() {
+      const rows = state.contacts.slice(0, 8);
+      if (!rows.length) {
+        els.previewTable.innerHTML = '<tr><td class="hint">No rows loaded yet.</td></tr>';
+        return;
+      }
+      const headers = ['name', 'email', 'company', 'role'];
+      const headHtml = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+      const bodyHtml = rows.map(r => `<tr>${headers.map(h => `<td>${escapeHtml(r[h])}</td>`).join('')}</tr>`).join('');
+      els.previewTable.innerHTML = headHtml + bodyHtml;
+    }
+
+    function loadRows(rows) {
+      state.rawRows = rows.filter(r => r && Object.keys(r).length);
+      state.columns = Array.from(new Set(state.rawRows.flatMap(r => Object.keys(r))));
+      state.mapping = {
+        name: inferColumn('name'),
+        email: inferColumn('email'),
+        company: inferColumn('company'),
+        role: inferColumn('role')
+      };
+      fillMappingDropdowns();
+      refreshContactsFromMapping();
+      state.completed.add(1);
+      render();
+    }
+
+    function parseFile(file) {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        loadRows(rows);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderTemplateValues() {
+      els.fromName.value = state.template.fromName;
+      els.subject.value = state.template.subject;
+      els.body.value = state.template.body;
+    }
+
+    function resolveTemplate(str, contact) {
+      return str
+        .replaceAll('{{name}}', contact.name || '')
+        .replaceAll('{{company}}', contact.company || '')
+        .replaceAll('{{role}}', contact.role || '')
+        .replaceAll('{{sender}}', state.template.fromName || '');
+    }
+
+    function renderPreview() {
+      const total = state.contacts.length;
+      if (!total) {
+        els.previewIndex.textContent = 'No contacts loaded.';
+        els.previewTo.textContent = '—';
+        els.previewSubject.textContent = '—';
+        els.previewBody.textContent = '—';
+        return;
+      }
+      state.previewIndex = Math.max(0, Math.min(state.previewIndex, total - 1));
+      const c = state.contacts[state.previewIndex];
+      els.previewIndex.textContent = `${state.previewIndex + 1} / ${total}`;
+      els.previewTo.textContent = c.email;
+      els.previewSubject.textContent = resolveTemplate(state.template.subject, c);
+      els.previewBody.textContent = resolveTemplate(state.template.body, c);
+    }
+
+    function renderMetrics(sent = 0, failed = 0) {
+      const total = state.contacts.length;
+      els.mTotal.textContent = String(total);
+      els.mSent.textContent = String(sent);
+      els.mFailed.textContent = String(failed);
+    }
+
+    async function generateWithAI() {
+      const apiKey = els.anthropicKey.value.trim();
+      const description = els.offering.value.trim();
+      if (!apiKey || !description) {
+        els.aiStatus.textContent = 'Provide API key and offering description.';
+        return;
+      }
+
+      els.aiLoader.hidden = false;
+      els.generateAI.disabled = true;
+      els.aiStatus.textContent = 'Generating...';
+
+      const prompt = `Create a high-converting B2B cold email template. Return JSON only with keys subject and body.\nUse placeholders {{name}}, {{company}}, {{role}}, {{sender}} where relevant.\nOffering details: ${description}`;
+      try {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 700,
+            temperature: 0.6,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (!res.ok) throw new Error(`Anthropic error ${res.status}`);
+        const data = await res.json();
+        const text = data?.content?.[0]?.text || '{}';
+        const jsonText = text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+        const parsed = JSON.parse(jsonText);
+        if (!parsed.subject || !parsed.body) throw new Error('Missing subject/body in response');
+        state.template.subject = parsed.subject;
+        state.template.body = parsed.body;
+        renderTemplateValues();
+        els.aiStatus.textContent = 'AI template generated.';
+      } catch (err) {
+        console.error(err);
+        els.aiStatus.textContent = `AI generation failed: ${err.message}`;
+      } finally {
+        els.aiLoader.hidden = true;
+        els.generateAI.disabled = false;
+      }
+    }
+
+    async function sendViaGmailMcp(to, subject, body) {
+      const payload = {
+        jsonrpc: '2.0',
+        id: crypto.randomUUID(),
+        method: 'tools/call',
+        params: {
+          name: 'send_email',
+          arguments: {
+            to,
+            subject,
+            body
+          }
+        }
+      };
+      const res = await fetch('https://gmail.mcp.claude.com/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || 'Unknown MCP error');
+      return data;
+    }
+
+    function logLine(html) {
+      const line = document.createElement('div');
+      line.innerHTML = html;
+      els.sendLog.appendChild(line);
+      els.sendLog.scrollTop = els.sendLog.scrollHeight;
+    }
+
+    async function sendAll() {
+      if (state.sending || !state.contacts.length) return;
+      state.sending = true;
+      els.sendAll.disabled = true;
+      els.sendLog.innerHTML = '';
+
+      let sent = 0;
+      let failed = 0;
+      const total = state.contacts.length;
+
+      for (let i = 0; i < total; i++) {
+        const c = state.contacts[i];
+        const subject = resolveTemplate(state.template.subject, c);
+        const body = resolveTemplate(state.template.body, c);
+
+        try {
+          await sendViaGmailMcp(c.email, subject, body);
+          sent++;
+          logLine(`<span class="ok">✓</span> ${escapeHtml(c.email)}`);
+        } catch (err) {
+          failed++;
+          logLine(`<span class="fail">✗</span> ${escapeHtml(c.email)} — ${escapeHtml(err.message)}`);
+        }
+        renderMetrics(sent, failed);
+        const pct = Math.round(((i + 1) / total) * 100);
+        els.progressBar.style.width = `${pct}%`;
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      state.sending = false;
+      els.sendAll.disabled = false;
+    }
+
+    function escapeHtml(s = '') {
+      return s
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    els.fileInput.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (file) parseFile(file);
+    });
+
+    els.demoBtn.onclick = () => {
+      loadRows([
+        { Name: 'Jamie Chen', Email: 'jamie@northstar.io', Company: 'Northstar', Role: 'Head of Growth' },
+        { Name: 'Ravi Patel', Email: 'ravi@axonlabs.com', Company: 'Axon Labs', Role: 'VP Sales' },
+        { Name: 'Maria Lopez', Email: 'maria@brightops.co', Company: 'BrightOps', Role: 'RevOps Manager' },
+        { Name: 'Elena Kim', Email: 'elena@pulsecloud.ai', Company: 'PulseCloud', Role: 'Marketing Director' },
+        { Name: 'Noah Smith', Email: 'noah@orbitworks.dev', Company: 'OrbitWorks', Role: 'Founder' }
+      ]);
+    };
+
+    [els.fromName, els.subject, els.body].forEach(input => {
+      input.addEventListener('input', () => {
+        state.template.fromName = els.fromName.value;
+        state.template.subject = els.subject.value;
+        state.template.body = els.body.value;
+        renderPreview();
+      });
+    });
+
+    els.generateAI.onclick = generateWithAI;
+
+    els.prevPreview.onclick = () => {
+      state.previewIndex = Math.max(0, state.previewIndex - 1);
+      renderPreview();
+    };
+
+    els.nextPreview.onclick = () => {
+      state.previewIndex = Math.min(state.contacts.length - 1, state.previewIndex + 1);
+      renderPreview();
+    };
+
+    els.sendAll.onclick = sendAll;
+
+    els.backBtn.onclick = () => {
+      state.step = Math.max(1, state.step - 1);
+      render();
+    };
+
+    els.nextBtn.onclick = () => {
+      if (state.step === 1) state.completed.add(1);
+      if (state.step === 2) state.completed.add(2);
+      if (state.step === 3) state.completed.add(3);
+      state.step = Math.min(4, state.step + 1);
+      render();
+    };
+
+    renderTemplateValues();
+    renderContactPreviewTable();
+    render();
+  </script>
+</body>
+</html>
